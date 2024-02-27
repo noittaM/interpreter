@@ -5,4 +5,4 @@ project(transpiler LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(transpiler src/main.cpp)
+add_executable(transpiler src/main.cpp src/Tokenizer.hpp src/Parser.hpp)
