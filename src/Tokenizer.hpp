@@ -8,10 +8,12 @@
 
 enum class TokenType {
     _return,
+    identifier,
+    let,
     int_lit,
-    expression,
     semi,
     plus,
+    equal,
 };
 
 
@@ -28,7 +30,7 @@ private:
 
    
 
-    std::optional<char> getCurrent () {
+    std::optional<char> getCurrent () const {
         if(m_index < m_inString.length())
             return m_inString[m_index];
         return {};
@@ -49,56 +51,61 @@ public:
         std::vector<Token> tokens{};
         std::string buf{};
 
-        while(this->getCurrent().has_value()) {
-            if (std::isalpha(this->getCurrent().value())) {
-                while (this->getCurrent().has_value() && std::isalnum(this->getCurrent().value())) {
-                    buf.push_back(this->take());
+        while(getCurrent().has_value()) {
+            if (std::isalpha(getCurrent().value())) {
+                while (getCurrent().has_value() && std::isalnum(getCurrent().value())) {
+                    buf.push_back(take());
                 }
-                if (buf == "return") {
-                    tokens.push_back({ .type = TokenType::_return, .value = "return"});
-                    buf.clear();
-                    continue;
-                } else {
-                    std::cerr << "Unrecognized string: '" << buf << "',dying...\n";
-                    exit(EXIT_FAILURE); 
-                }           
-            } else if (std::isdigit(this->getCurrent().value())) {
-                while(std::isdigit(this->getCurrent().value())) {
-                    buf.push_back(this->take());
-                } 
-                if (this->getCurrent().value() == '+') {
-                    while (this->getCurrent().has_value() && this->getCurrent().value() == '+') {
-                        buf.push_back('+');
-                        this->take();
-                        if (this->getCurrent().has_value() && std::isdigit(this->getCurrent().value())) {
-                            while (this->getCurrent().has_value() && std::isdigit(this->getCurrent().value())) {
-                                buf.push_back(this->take());
-                            }
-                        } else {
-                            std::cerr << "Expected int.\n";
-                            std::cerr << "dying...\n";
-                            exit(EXIT_FAILURE);
-                        }
 
-                    }
-                tokens.push_back({ .type = TokenType::expression, .value = buf });
-                buf.clear();
-                continue;
-                } else {
-                    tokens.push_back({.type = TokenType::int_lit, .value = buf});
+                if (buf == "return") {
+                    tokens.push_back({ .type = TokenType::_return});
                     buf.clear();
                     continue;
+
+                } else if (buf == "let") {
+                    tokens.push_back({ .type = TokenType::let });
+                    buf.clear();
+                    continue;
+
+                } else {
+                    tokens.push_back({ .type = TokenType::identifier, .value = buf});
+                    buf.clear();
+                    continue; 
+
                 }
-            } else if (this->getCurrent().value() == ';') {
-                tokens.push_back({ .type = TokenType::semi, .value = ";"});
-                this->take();
+            } else if (std::isdigit(getCurrent().value())) {
+                while(std::isdigit(getCurrent().value())) {
+                    buf.push_back(take());
+                } 
+
+                tokens.push_back({ .type = TokenType::int_lit, .value = buf });
                 buf.clear();
                 continue;
-            } else if(std::isspace(this->getCurrent().value())) {
-                this->take();
+
+            } else if (getCurrent().value() == '+') {
+                tokens.push_back({ .type = TokenType::plus});
+                take();
+                buf.clear();// TODO: why?
                 continue;
+
+            } else if (getCurrent().value() == '=') {
+                tokens.push_back({ .type = TokenType::equal});
+                take();
+                buf.clear();
+                continue;
+
+            } else if (getCurrent().value() == ';') {
+                tokens.push_back({ .type = TokenType::semi});
+                take();
+                buf.clear();
+                continue;
+
+            } else if(std::isspace(getCurrent().value())) {
+                take();
+                continue;
+            
             } else {
-                std::cerr << "Unrecognized symbol: '" << this->getCurrent().value() << "', dying rn...\n";
+                std::cerr << "Unrecognized symbol: '" << getCurrent().value() << "', dying rn...\n";
                 exit(EXIT_FAILURE);
             }    
         }
@@ -113,14 +120,12 @@ std::ostream& operator<< (std::ostream& out, const TokenType value) {
             return out << "_return";
         case TokenType::int_lit:
             return out << "int_lit";
-        case TokenType::expression:
-            return out << "expression";
         case TokenType::semi:
             return out << "semi";
         case TokenType::plus:
             return out << "plus";
         default:
-            return out << "add a case in operator<<\n";
+            return out << "add a case in overload of operator<<\n";
     }
 }
 

@@ -29,7 +29,7 @@ int main (int argc, char* argv[]){
     
     {
         std::fstream inFile(argv[1], std::ios::in);
-        if(!inFile) {
+        if (!inFile) {
             std::cerr << "File could not be read.\n";
             return EXIT_FAILURE;
         }
@@ -40,12 +40,14 @@ int main (int argc, char* argv[]){
 
     Tokenizer tokenizer(file);
     std::vector<Token> tokens = tokenizer.tokenize();
-    for (auto var : tokens) {
-        std::cout << var.type << ": "<< var.value.value() << '\n';
-    }
+    //for (auto var : tokens) {
+    //    std::cout << var.type;
+    //    if (var.value.has_value()) std::cout << ": " << var.value.value() << '\n';
+    //    else std::cout << '\n';
+    //}
     Parser parser(tokens);
     const std::string code { parser.parse() };
-    writeAsCpp(code);
+    //writeAsCpp(code);
     
    
     return EXIT_SUCCESS;
