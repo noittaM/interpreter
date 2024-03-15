@@ -118,12 +118,18 @@ std::ostream& operator<< (std::ostream& out, const TokenType value) {
     switch (value) {
         case TokenType::_return:
             return out << "_return";
+        case TokenType::identifier:
+            return out << "identifier";
+        case TokenType::let:
+            return out << "let";
         case TokenType::int_lit:
             return out << "int_lit";
         case TokenType::semi:
             return out << "semi";
         case TokenType::plus:
             return out << "plus";
+        case TokenType::equal:
+            return out << "equal";
         default:
             return out << "add a case in overload of operator<<\n";
     }

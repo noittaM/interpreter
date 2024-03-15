@@ -34,23 +34,46 @@ private:
         return (m_inTokens[m_index++]);
     }
 
+    int getVariableValue() {
+        const std::string identifier { getCurrent().value().value.value() };
+        if (m_variables.contains(identifier)) {
+            return std::stoi(m_variables[identifier].value);
+        } else {
+            std::cerr << "Unrecognized identifier: " << identifier <<'\n';
+            exit(EXIT_FAILURE);
+        }
+    }
+
     int praseExpression() {
         int expression;
-        if (getCurrent().has_value() && getCurrent().value().type == TokenType::int_lit) {
-            expression = std::stoi(take().value.value());
-        } else {
+        if (!getCurrent().has_value()) {
             std::cerr << "Expected integer literal.\n";
             exit(EXIT_FAILURE);
         }
-
+        if (getCurrent().value().type == TokenType::int_lit) {
+            expression = std::stoi(take().value.value());
+        } else if (getCurrent().value().type == TokenType::identifier) {
+            //TODO: type checking
+            expression = getVariableValue();
+            take();
+        } else {
+            std::cerr << "expected expression\n";
+            exit(EXIT_FAILURE);
+        }
+        
         while (getCurrent().has_value()) {
             if (getCurrent().value().type == TokenType::plus) {
                 take();
-                if (getCurrent().has_value() && getCurrent().value().type == TokenType::int_lit) {
-                    expression += std::stoi(take().value.value());
-                } else {
-                    std::cerr << "Expected integer literal.\n";
+                if (!getCurrent().has_value() ) {
+                    std::cerr << "Expected integer expression.\n";
                     exit(EXIT_FAILURE);
+                } 
+                if (getCurrent().value().type == TokenType::int_lit){
+                    expression += std::stoi(take().value.value());
+                } else if (getCurrent().value().type == TokenType::identifier) {
+                    //TODO: type checking
+                    expression += getVariableValue();
+                    take();
                 }
             } else {
                 return expression;
@@ -58,6 +81,56 @@ private:
         } 
         return expression;
     }
+
+    
+
+    void assignVariable (const std::string& identifier) {
+        if (!getCurrent().has_value() || getCurrent().value().type != TokenType::equal) {
+            std::cerr << "Expected '='.\n";
+            exit(EXIT_FAILURE);
+        }
+        take();
+
+        // this is where some type checking should be made
+        // to determine type of variable but idc now.
+        int varValue = praseExpression();
+        if (!getCurrent().has_value() || getCurrent().value().type != TokenType::semi) {
+            std::cerr << "Exprected ';'.\n";
+            exit(EXIT_FAILURE);
+        }  
+        take();
+
+        if (m_variables.contains(identifier)) {
+            m_variables[identifier].value = std::to_string(varValue);
+        } else {
+            std::cerr << '\'' << identifier << "' was never declared\n";
+            exit(EXIT_FAILURE);
+        }
+       
+    }
+
+
+    void addVariable (const std::string& identifier) {
+        if (!getCurrent().has_value() || getCurrent().value().type != TokenType::equal) {
+            std::cerr << "Expected '='.\n";
+            exit(EXIT_FAILURE);
+        } 
+        take();
+        // this is where some type checking should be made
+        // to determine type of variable but idc now.
+        int varValue = praseExpression();
+        if (m_variables.contains(identifier)) {
+            std::cerr << "Variable " << identifier << "already exists.\n";
+            exit(EXIT_FAILURE);
+        }
+        if (!getCurrent().has_value() || getCurrent().value().type != TokenType::semi) {
+            std::cerr << "Exprected ';'.\n";
+            exit(EXIT_FAILURE);
+        }
+        take();
+        m_variables.insert( {identifier, { .type = VarType::_int, .value = std::to_string(varValue) }});
+    }
+    
 
 public:
     Parser(const std::vector<Token> &tokens)
@@ -93,35 +166,15 @@ public:
                 }
             } else if (getCurrent().value().type == TokenType::let) {
                 take();
-                std::string identifier;
-                if (getCurrent().has_value() && getCurrent().value().type == TokenType::identifier) {
-                    identifier = take().value.value();
-                } else {
-                    std::cerr << "Expected identifier.\n";
+                if (!getCurrent().has_value() || getCurrent().value().type != TokenType::identifier) {
+                    std::cerr << "Expected identifier\n";
                     exit(EXIT_FAILURE);
                 }
-                if (getCurrent().has_value() && getCurrent().value().type == TokenType::equal) {
-                    take();
-                    // this is where some type checking should be made
-                    // to determine type of variable but idc now.
-                    int varValue = praseExpression();
-                    //check if variables exists.
-                    if (m_variables.contains(identifier)) {
-                        std::cerr << "Variable " << identifier << "already exists.\n";
-                        exit(EXIT_FAILURE);
-                    }
-                    if(getCurrent().has_value() && getCurrent().value().type == TokenType::semi) {
-                        take();
-                        m_variables.insert( {identifier, { .type = VarType::_int, .value = std::to_string(varValue) }});
-                        std::cout << "m_variables["<< identifier << "] = " << m_variables.at(identifier).value << '\n';
-                    } else {
-                        std::cerr << "Exprected ';'.\n";
-                        exit(EXIT_FAILURE);
-                    }
-                } else {
-                    std::cerr << "Expected '='.\n";
-                    exit(EXIT_FAILURE);
-                }
+                const std::string identifier = take().value.value();
+                addVariable(identifier);                
+            } else if(getCurrent().value().type == TokenType::identifier) {
+                const std::string identifier = take().value.value(); 
+                assignVariable(identifier);
             } else if (getCurrent().value().type == TokenType::int_lit) {
                 std::cerr << "What do I do with int literal: " << getCurrent().value().value.value() << "????.\n";
                 exit(EXIT_FAILURE);
@@ -138,4 +191,4 @@ public:
         return output;
     }
 };
-#endif // PARSER_HPPz
+#endif // PARSER_HPP

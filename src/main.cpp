@@ -7,18 +7,6 @@
 #include "./Tokenizer.hpp"
 #include "./Parser.hpp"
 
-void writeAsCpp (const std::string& str) {
-    std::string output;
-    output = "int main() {\n";
-    output += str;
-    output += '}';
-    system("touch out.cpp");
-    std::ofstream file;
-    file.open("out.cpp");
-    file << output;
-}
-
-
 int main (int argc, char* argv[]){
     if (argc != 2) {
         std::cerr << "Incorrect usage.\n";
@@ -40,15 +28,8 @@ int main (int argc, char* argv[]){
 
     Tokenizer tokenizer(file);
     std::vector<Token> tokens = tokenizer.tokenize();
-    //for (auto var : tokens) {
-    //    std::cout << var.type;
-    //    if (var.value.has_value()) std::cout << ": " << var.value.value() << '\n';
-    //    else std::cout << '\n';
-    //}
     Parser parser(tokens);
     const std::string code { parser.parse() };
-    //writeAsCpp(code);
-    
    
     return EXIT_SUCCESS;
 }
