@@ -11,6 +11,8 @@ enum class TokenType {
     identifier,
     let,
     int_lit,
+    curly_open,
+    curly_close,
     semi,
     plus,
     equal,
@@ -99,7 +101,14 @@ public:
                 take();
                 buf.clear();
                 continue;
-
+            } else if (getCurrent().value() == '{') {
+                tokens.push_back({ .type = TokenType::curly_open});
+                take();
+                buf.clear();
+            } else if (getCurrent().value() == '}') {
+                tokens.push_back({ .type = TokenType::curly_close});
+                take();
+                buf.clear();
             } else if(std::isspace(getCurrent().value())) {
                 take();
                 continue;

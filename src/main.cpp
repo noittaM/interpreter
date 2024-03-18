@@ -16,20 +16,19 @@ int main (int argc, char* argv[]){
     std::string file;
     
     {
-        std::fstream inFile(argv[1], std::ios::in);
-        if (!inFile) {
+        std::fstream inputFile(argv[1], std::ios::in);
+        if (!inputFile) {
             std::cerr << "File could not be read.\n";
             return EXIT_FAILURE;
         }
         std::stringstream contents;
-        contents << inFile.rdbuf();
+        contents << inputFile.rdbuf();
         file = contents.str();
     }
-
+ 
     Tokenizer tokenizer(file);
     std::vector<Token> tokens = tokenizer.tokenize();
     Parser parser(tokens);
-    const std::string code { parser.parse() };
-   
+    
     return EXIT_SUCCESS;
 }
