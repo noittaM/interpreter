@@ -6,8 +6,9 @@
 #include <iostream>
 #include <optional>
 
+
 enum class TokenType {
-    _return,
+    _return ,
     identifier,
     let,
     int_lit,
@@ -15,7 +16,10 @@ enum class TokenType {
     curly_close,
     semi,
     plus,
-    equal,
+    dash,
+    forward_slash,
+    asterisk,    
+    equal
 };
 
 
@@ -38,8 +42,8 @@ private:
         return {};
     }
 
-    char take () {
-        return(m_inString[m_index++]);
+    void take () {
+        m_index++;
     } 
 
 public:
@@ -56,16 +60,17 @@ public:
         while(getCurrent().has_value()) {
             if (std::isalpha(getCurrent().value())) {
                 while (getCurrent().has_value() && std::isalnum(getCurrent().value())) {
-                    buf.push_back(take());
+                    buf.push_back(getCurrent().value());
+                    take();
                 }
 
                 if (buf == "return") {
-                    tokens.push_back({ .type = TokenType::_return});
+                    tokens.push_back({ .type = TokenType::_return, .value = {} });
                     buf.clear();
                     continue;
 
                 } else if (buf == "let") {
-                    tokens.push_back({ .type = TokenType::let });
+                    tokens.push_back({ .type = TokenType::let, .value = {} });
                     buf.clear();
                     continue;
 
@@ -77,7 +82,8 @@ public:
                 }
             } else if (std::isdigit(getCurrent().value())) {
                 while(std::isdigit(getCurrent().value())) {
-                    buf.push_back(take());
+                    buf.push_back(getCurrent().value());
+                    take();
                 } 
 
                 tokens.push_back({ .type = TokenType::int_lit, .value = buf });
@@ -85,28 +91,46 @@ public:
                 continue;
 
             } else if (getCurrent().value() == '+') {
-                tokens.push_back({ .type = TokenType::plus});
+                tokens.push_back({ .type = TokenType::plus, .value = {} });
                 take();
                 buf.clear();// TODO: why?
                 continue;
 
+            } else if (getCurrent().value() == '-'){
+                tokens.push_back({ .type = TokenType::dash, .value = {} });
+                take();
+                buf.clear();// TODO: why?
+                continue;
+
+            } else if (getCurrent().value() == '*'){
+                tokens.push_back({ .type = TokenType::asterisk, .value = {} });
+                take();
+                buf.clear();// TODO: why?
+                continue;
+
+            } else if (getCurrent().value() == '/'){
+                tokens.push_back({ .type = TokenType::forward_slash, .value = {} });
+                take();
+                buf.clear();// TODO: why?
+                continue;
+                
             } else if (getCurrent().value() == '=') {
-                tokens.push_back({ .type = TokenType::equal});
+                tokens.push_back({ .type = TokenType::equal, .value = {} });
                 take();
                 buf.clear();
                 continue;
 
             } else if (getCurrent().value() == ';') {
-                tokens.push_back({ .type = TokenType::semi});
+                tokens.push_back({ .type = TokenType::semi, .value = {} });
                 take();
                 buf.clear();
                 continue;
             } else if (getCurrent().value() == '{') {
-                tokens.push_back({ .type = TokenType::curly_open});
+                tokens.push_back({ .type = TokenType::curly_open, .value = {} });
                 take();
                 buf.clear();
             } else if (getCurrent().value() == '}') {
-                tokens.push_back({ .type = TokenType::curly_close});
+                tokens.push_back({ .type = TokenType::curly_close, .value = {} });
                 take();
                 buf.clear();
             } else if(std::isspace(getCurrent().value())) {

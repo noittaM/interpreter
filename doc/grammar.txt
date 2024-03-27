@@ -1,0 +1,34 @@
+[Program] {
+    [Statement]^n
+}
+
+[Scope] {
+    [Statement]^n
+}
+
+[Statement] {
+    let identifier = [Expression];
+    identifier = [Expression];
+    return [Expression];
+    [Scope]
+}
+
+
+[Expression] {
+    [Term]
+    [BinaryExpr]
+}
+
+[Term] {
+    integer literal
+    identifier
+}
+
+
+[BinaryExpr] {
+    [Expression] [BinaryOperator] [Expression]
+}
+
+[BinaryOperator] {
+    -
+}

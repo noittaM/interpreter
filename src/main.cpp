@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -29,6 +28,6 @@ int main (int argc, char* argv[]){
     Tokenizer tokenizer(file);
     std::vector<Token> tokens = tokenizer.tokenize();
     Parser parser(tokens);
-    
+    parser.parse();
     return EXIT_SUCCESS;
 }
