@@ -48,7 +48,7 @@ private:
 
 public:
 
-    Tokenizer (const std::string& code)
+    explicit Tokenizer (const std::string& code)
     : m_inString{code}
     {
     }
@@ -157,16 +157,25 @@ std::ostream& operator<< (std::ostream& out, const TokenType value) {
             return out << "let";
         case TokenType::int_lit:
             return out << "int_lit";
+        case TokenType::curly_open:
+            return out << "curly_open";
+        case TokenType::curly_close:
+            return out << "curly_close";
         case TokenType::semi:
             return out << "semi";
         case TokenType::plus:
             return out << "plus";
+        case TokenType::dash:
+            return out << "dash";
+        case TokenType::forward_slash:
+            return out << "forward_slash";
+        case TokenType::asterisk:
+            return out << "asterisk";
         case TokenType::equal:
             return out << "equal";
         default:
-            return out << "add a case in overload of operator<<\n";
+            return out << "add a case for TokenType in overload of operator<<";
     }
 }
-
 
 #endif //TOKENIZER_HPP
