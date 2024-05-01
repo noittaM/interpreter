@@ -1,6 +1,5 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
-#define TMP_SCALEDOWN 0
 
 #include <cstdlib>
 #include <string>
@@ -76,15 +75,15 @@ struct NodeReturn {
 };
 
 struct NodeStatement {
-    std::variant < 
+    std::variant <
         NodeDefineVar*,
         NodeAssignVar*,
         NodeReturn*,
         NodeScope*
-    > statement; 
+    > statement;
 };
 
-struct nodeProgram {
+struct NodeProgram {
     std::vector < NodeStatement* > statements;
 };
 
@@ -95,6 +94,7 @@ public:
     {
     }
 
+    // TODO: copy constructor and assignment
     ~Parser() {
         for (const auto& stmt : m_prog.statements) {
             delete stmt;
@@ -102,10 +102,10 @@ public:
         // m_prog.statements.clear();
     }
 
-    nodeProgram parse() {
+    NodeProgram parse() {
         while (peekToken().has_value()) {
             NodeStatement* stmt = new  NodeStatement(getNodeStatement());
-            std::cout << stmt->statement.index() << '\n';
+            std::cout << stmt->statement.index() << std::endl;
             m_prog.statements.push_back(stmt);
         }
         return m_prog; 
@@ -114,7 +114,7 @@ public:
 private:
     std::vector<Token> m_inTokens;
     size_t m_index{};
-    nodeProgram m_prog;
+    NodeProgram m_prog;
 
     std::optional<Token> peekToken(size_t offset = 0) {
         if (m_index + offset < m_inTokens.size())
@@ -126,7 +126,7 @@ private:
         m_index++;
     }
 
-    std::optional<NodeTerm> tryGetNodeTerm() {
+    std::optional<NodeTerm> tryGetNode() {
         NodeTerm node;
         if (!peekToken().has_value()) {
             return {};
@@ -178,9 +178,7 @@ private:
         return false;
     }
 
-    #if  TMP_SCALEDOWN
     std::optional<NodeBinaryExpr> getNodeBinaryExpr() {
-        
         /*
         example:
         5 + 5 - 3 + 9
@@ -191,7 +189,7 @@ private:
                                 vvvvvvvvv
         binarySub(binaryAdd(binaryAdd(5, 0), 5), 3) + 9
                                                 vvvvvvv
-        binaryAdd(binarySub(binaryAdd(binaryAdd(5, 0), 5), 3), 9)                                                                   
+        binaryAdd(binarySub(binaryAdd(binaryAdd(5, 0), 5), 3), 9)
         */
         std::optional<NodeTerm> leftTerm { getNodeTerm().value() };
         if (!leftTerm.has_value()) {
@@ -205,12 +203,10 @@ private:
 
         NodeBinaryExpr binaryExpr;
         NodeExpr leftOperand { &leftTerm.value() };
-        {
-            NodeTerm rightTerm {0};
-            NodeExpr rightOperand { &rightTerm };
-            NodeBinaryExprAdd node { &leftOperand, &rightOperand };
-            binaryExpr.binaryExpr.emplace<NodeBinaryExprAdd*>(&node);
-        } // this is so bad
+        NodeTerm rightTerm {0};
+        NodeExpr rightOperand { &rightTerm };
+        NodeBinaryExprAdd node { &leftOperand, &rightOperand };
+        binaryExpr.binaryExpr.emplace<NodeBinaryExprAdd*>(&node);
 
         bool foundExpression = false;
         while (true) {
@@ -256,37 +252,21 @@ private:
         // return nothing and don't take()
         return {};
     }
-    
+
 
     std::optional<NodeExpr> getNodeExpression() {
         if (!peekToken().has_value()) {
             return {};
         }
         if (std::optional<NodeTerm> node { tryGetNodeTerm() }) {
-            std::cout << "are we here\n";
+            return NodeExpr { &node.value() };
+        } else if (std::optional<NodeBinaryExpr> node { getNodeBinaryExpr() }) {
             return NodeExpr { &node.value() };
         } else {
-            std::cout << "are we here2\n"; 
-            if (std::optional<NodeBinaryExpr> node = getNodeBinaryExpr()) {
-            return NodeExpr { &node.value() };
-        } else 
             return {};
         }
     }
-    #endif
 
-    #if !TMP_SCALEDOWN
-    std::optional<NodeExpr> getNodeExpression() {
-        if (!peekToken().has_value()) {
-            return {};
-        }
-        if (std::optional<NodeTerm> node { tryGetNodeTerm() }) {
-            return NodeExpr { &node.value() };
-        } else {
-            return {};
-        }
-    }
-    #endif
     std::optional<NodeReturn> getNodeReturn() {
         if (!peekToken().has_value()) {
             return {};
@@ -413,32 +393,24 @@ private:
         return scope;
     }
 
-// #define TMP
     // TODO: check if getNodeStatme needs to be an optional or if it should fail
     NodeStatement getNodeStatement() {
         if (!peekToken().has_value()) {
             return {};
         }
+
         if (std::optional<NodeReturn> node { getNodeReturn() }) {
-            #ifdef TMP 
-            std::cout << "hi return\n"; 
-            #endif
             return NodeStatement { &node.value() };
+
         } else if (std::optional<NodeDefineVar> node { getNodeDefineVariable() }) {
-            #ifdef TMP 
-            std:: cout << "hi define var\n";
-            #endif
             return NodeStatement { &node.value() };
+
         } else if (std::optional<NodeAssignVar> node { getNodeAssignVariable() }) {
-            #ifdef TMP 
-            std:: cout << "hi assgin var\n";
-            #endif
             return NodeStatement { &node.value() };
+
         } else if (std::optional<NodeScope> node { getNodeScope() }) {
-            #ifdef TMP 
-            std:: cout << "hi scope\n";
-            #endif
             return NodeStatement { &node.value()};
+
         } else {
             std::cerr << "Invalid expression.\n";
             exit(EXIT_FAILURE);
@@ -520,7 +492,7 @@ private:
         if (!peekToken().has_value() || peekToken().value().type != TokenType::semi) {
             std::cerr << "Exprected ';'.\n";
             exit(EXIT_FAILURE);
-        }  
+        }
         take();
         const std::vector<Variable>::iterator it {
             std::find_if(
@@ -533,8 +505,8 @@ private:
             std::cerr << '\'' << identifier << "' was never declared\n";
             exit(EXIT_FAILURE);
         }
-       
-    }   
+
+    }
 
     void addVariable (const std::string& identifier) {
         if (!peekToken().has_value() || peekToken().value().type != TokenType::equal) {
@@ -561,9 +533,9 @@ private:
         take();
         m_variables.push_back( { .identifier = identifier,  .type = VarType::_int, .value = std::to_string(varValue) });
     }
-    
+
     int parseScope () {
-        
+
         if (!peekToken().has_value() ||
         peekToken().value().type != TokenType::curly_open) {
             std::cerr << "Expected '{'.\n(how?)\n";
@@ -573,7 +545,7 @@ private:
     }
     #endif
 
-    
+
 };
 
 std::ostream& operator<< (std::ostream& out, NodeStatement* node) {
@@ -587,7 +559,7 @@ std::ostream& operator<< (std::ostream& out, NodeStatement* node) {
         return out << "NodeScope";
     } else {
         out << node->statement.index();
-        return out << " add a case for Statement in overload of operator<<";
+        return out << "add a case for Statement in overload of operator<<";
     }
 }
 #endif // PARSER_HPP
