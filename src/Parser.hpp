@@ -2,6 +2,7 @@
 #define PARSER_HPP
 
 #include <cstdlib>
+#include <ostream>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -59,7 +60,7 @@ struct NodeScope {
 };
 
 struct NodeExpr {
-    std::variant <NodeTerm, NodeBinaryExpr *> expression;
+    std::variant <NodeTerm *, NodeBinaryExpr *> expression;
 };
 
 struct NodeDefineVar{
@@ -129,7 +130,7 @@ private:
     }
 
     std::optional<NodeStatement *> getNodeStatement() {
-        NodeStatement* stmt = nullptr;
+        NodeStatement* stmt { new NodeStatement };
 
         if (std::optional<NodeDefineVar *> node = getNodeDefineVar()) {
             stmt->statement = node.value();
@@ -145,11 +146,10 @@ private:
     }
 
     std::optional<NodeDefineVar *> getNodeDefineVar() {
-        if (!peekToken().has_value() 
+        if (!peekToken().has_value()
             || peekToken().value().type != TokenType::let) {
             return {};
         }
-
         consumeToken();
 
         // expect identifier after 'let'
@@ -172,7 +172,7 @@ private:
             return node;
         }
 
-        // expect '=' after indentifier
+        // expect '=' after identifier
         if (!peekToken().has_value()
             || peekToken().value().type != TokenType::equal) {
             std::cerr << "Expected '=' in identifier definition\n";
@@ -190,7 +190,7 @@ private:
         // expect ';'
         if (!peekToken().has_value()
             || peekToken().value().type != TokenType::semi) {
-            std::cerr << "Expected ';'\n";
+            std::cerr << "Expected ';' after variable defnition\n";
             exit(EXIT_FAILURE);
         }
         consumeToken();
@@ -225,7 +225,7 @@ private:
         // expect ';'
         if (!peekToken().has_value()
             || peekToken().value().type != TokenType::semi) {
-            std::cerr << "Expected ';'\n";
+            std::cerr << "Expected ';' in variable assignment\n";
             exit(EXIT_FAILURE);
         }
         consumeToken();
@@ -243,7 +243,7 @@ private:
         consumeToken();
 
         // expect expression
-        std::optional<NodeExpr *> expr { new NodeExpr { getNodeExpr() } };
+        std::optional<NodeExpr *> expr { getNodeExpr() };
         if (!expr.has_value()) {
             std::cerr << "Expected expression after 'return'\n";
             exit(EXIT_FAILURE);
@@ -264,34 +264,37 @@ private:
     std::optional<NodeExpr *> getNodeExpr() {
         // term
         // binary expression
-        NodeExpr* expr;
+        NodeExpr* expr { new NodeExpr };
         // define var
         // assign var
         // return
-        if (std::optional<NodeTerm> node = getNodeTerm()) {
+        if (std::optional<NodeTerm *> node = getNodeTerm()) {
             expr->expression = node.value();
         } else if (std::optional<NodeBinaryExpr *> node = getNodeBinaryExpr()) {
             expr->expression = node.value();
         } else {
             return {};
         }
+        return expr;
     }
 
-    std::optional<NodeTerm> getNodeTerm() {
+    std::optional<NodeTerm *> getNodeTerm() {
         if (!peekToken().has_value()) {
             return {};
         }
 
-        NodeTerm term;
+        NodeTerm* term { new NodeTerm };
 
         if (peekToken().value().type == TokenType::identifier
             && !isOperator(peekToken(1))) {
             // NOTE: copying strings around again
-            term.term.emplace<const identifier>(peekToken().value().value.value());
+            term->term.emplace<const identifier>(peekToken().value().value.value());
+            consumeToken();
             return term;
         } else if (peekToken().value().type == TokenType::int_lit) {
             int valueInt { std::stoi(peekToken().value().value.value()) };
-            term.term.emplace<int_literal>(valueInt);
+            term->term.emplace<int_literal>(valueInt);
+            consumeToken();
             return term;
         } else {
             return {};
@@ -345,9 +348,9 @@ private:
         // if not found explode
         // if found make a biexper depending on the operator
         // repeat *
-        NodeExpr* leftOperand;
-        NodeExpr* rightOperand;
-        NodeBinaryExpr* binaryExpr;
+        NodeExpr* leftOperand { new NodeExpr };
+        NodeExpr* rightOperand { new NodeExpr };
+        NodeBinaryExpr* binaryExpr { new NodeBinaryExpr };
 
         bool foundExpr = false;
 
@@ -359,13 +362,13 @@ private:
                 std::cerr << "Expected right operand\n";
             }
 
-            leftOperand->expression.emplace<NodeTerm>(NodeTerm {
+            leftOperand->expression.emplace<NodeTerm *>( new NodeTerm {
                 .term { peekToken().value().value.value() }
             });
 
             TokenType _operator { peekToken(1).value().type };
 
-            rightOperand->expression.emplace<NodeTerm>(NodeTerm {
+            rightOperand->expression.emplace<NodeTerm *>(new NodeTerm {
                 .term { peekToken(2).value().value.value() }
             });
 
@@ -412,10 +415,6 @@ private:
             return binaryExpr;
         }
         return {};
-
-
-
-
 
         #if 0
         std::optional<NodeTerm> leftTerm { getNodeTerm().value() };
@@ -909,7 +908,7 @@ private:
 
 };
 
-std::ostream& operator<< (std::ostream& out, NodeStatement* node) {
+inline std::ostream& operator<< (std::ostream& out, NodeStatement* node) {
     if (std::holds_alternative<NodeDefineVar*>(node->statement)) {
         return out << "NodeDefineVar";
     } else if (std::holds_alternative<NodeAssignVar*>(node->statement)) {

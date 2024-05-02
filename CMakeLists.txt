@@ -8,4 +8,5 @@ set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_compile_options(-Wall -Wextra -Wpedantic -g)
 
-add_executable(interpreter src/main.cpp src/Tokenizer.hpp src/Parser.hpp)
+add_executable(interpreter src/main.cpp src/Tokenizer.hpp src/Parser.hpp
+                           src/Executer.hpp)
