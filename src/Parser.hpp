@@ -1,6 +1,7 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
+#include <atomic>
 #include <cstdlib>
 #include <ostream>
 #include <string>
@@ -51,6 +52,8 @@ struct NodeBinaryExpr {
         NodeBinaryExprMult*,
         NodeBinaryExprDiv*
     > binaryExpr;
+    // std::vector<TokenType> operators;
+    // std::vector<Term *> operands;
 };
 
 struct NodeStatement;
@@ -330,6 +333,10 @@ private:
         }
         return false;
     }
+    struct newBinaryExpression {
+        std::vector<TokenType> operators;
+        std::vector<NodeTerm *> operands;
+    };
     std::optional<NodeBinaryExpr *> getNodeBinaryExpr() {
         // TODO: make is so a binary expression can have multiple operators
         /*
@@ -360,6 +367,111 @@ private:
         if (!isTerm(peekToken()) || !isOperator(peekToken(1))) {
             return {};
         }
+
+        #if 1
+        // check if there is an operator
+        // if there is check for a term
+        // if there is a term and operator
+        // consume only the first term then
+        // while (true)
+        // check for operator
+        // if found consume it and check for a term
+        // if found consume
+        // if not die
+        // if operator not found
+        // break
+        // also make sure you go loop at least once. what why?
+
+
+        if (!isOperator(peekToken(1))) {
+            return {};
+        }
+
+        newBinaryExpression* expr;
+
+        if (peekToken().value().type == TokenType::identifier) {
+            if (!peekToken().value().value.has_value()) {
+                std::cerr << "parser error: got identifier with no value\n";
+            }
+
+            expr = new newBinaryExpression;
+            NodeTerm* term { new NodeTerm { peekToken().value().value.value() }};
+
+            expr->operands.push_back(term);
+
+            consumeToken();
+        } else if (peekToken().value().type == TokenType::int_lit) {
+            if (!peekToken().value().value.has_value()) {
+                std::cerr << "parser error: got int literal with no value\n";
+            }
+
+            expr = new newBinaryExpression;
+            NodeTerm* term { new NodeTerm { std::stoi(peekToken().value().value.value()) }};
+
+            expr->operands.push_back(term);
+
+            consumeToken();
+        } else {
+            return {};
+        }
+
+        while (true) {
+            expr->operators.push_back(peekToken(1).value().type);
+            if (!isOperator(peekToken())) {
+                break;
+            }
+
+            expr->operators.push_back(peekToken().value().type);
+            consumeToken();
+
+            if (peekToken().value().type == TokenType::identifier) {
+                if (!peekToken().value().value.has_value()) {
+                    std::cerr << "parser error: got identifier with no value\n";
+                }
+
+                NodeTerm* term { new NodeTerm { peekToken().value().value.value() }};
+                expr->operands.push_back(term);
+
+                consumeToken();
+
+            } else if (peekToken().value().type == TokenType::int_lit) {
+                if (!peekToken().value().value.has_value()) {
+                    std::cerr << "parser error: got int literal with no value\n";
+                }
+
+                NodeTerm* term { new NodeTerm { std::stoi(peekToken().value().value.value()) }};
+                expr->operands.push_back(term);
+
+                consumeToken();
+
+            } else {
+                std::cerr << "Expected operator\n";
+                exit(EXIT_FAILURE);
+            }
+
+        }
+        #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         // expect a right operand since we found a left operand and operator
         if (!isTerm(peekToken(2))) {

@@ -25,7 +25,7 @@
 
 
 [BinaryExpr] {
-    [Expression] [BinaryOperator] [Expression]
+    [Term] ([BinaryOperator] [Term])^n
 }
 
 [BinaryOperator] {
