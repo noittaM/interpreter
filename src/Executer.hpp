@@ -29,30 +29,42 @@ private:
     void executeNode(NodeStatement* node) {
         const auto& stmt = node->statement;
         if (std::holds_alternative<NodeDefineVar*>(stmt)) {
-                // const std::string ident = std::get<NodeDefineVar*>(stmt)->identifier;
-                // std::vector<std::string>::iterator it {
-                //     std::find_if(
-                //         m_vars.begin(),
-                //         m_vars.end(),
-                //         [&](const std::string& newVar){
-                //             return ident == newVar;
-                //         })};
-                // if (it == m_vars.end()) {
-                //     m_vars.push_back(ident);
-                // } else {
-                //     std::cerr << "Variable " << ident << " already exists.\n";
-                //     exit(EXIT_FAILURE);
-                // }
-                std::cout << "defning variable lwl" << std::endl;
-            } else if (std::holds_alternative<NodeAssignVar*>(stmt)) {
-                std::cout << "assigning variable lwl" << std::endl;
-            } else if (std::holds_alternative<NodeReturn*>(stmt)) {
-                std::cout << "returning variable lwl" << std::endl;
-            } else if (std::holds_alternative<NodeScope*>(stmt)) {
-                std::cout << "how is there a scope wtf variable lwl" << std::endl;
+            // const std::string ident = std::get<NodeDefineVar*>(stmt)->identifier;
+            // std::vector<std::string>::iterator it {
+            //     std::find_if(
+            //         m_vars.begin(),
+            //         m_vars.end(),
+            //         [&](const std::string& newVar){
+            //             return ident == newVar;
+            //         })};
+            // if (it == m_vars.end()) {
+            //     m_vars.push_back(ident);
+            // } else {
+            //     std::cerr << "Variable " << ident << " already exists.\n";
+            //     exit(EXIT_FAILURE);
+            // }
+            std::cout << "defning variable lwl" << std::endl;
+            auto value = std::get<NodeDefineVar *>(stmt)->value;
+            if (std::holds_alternative<NodeTerm *>(value.value()->expression)) {
+                std::cout << "define variable has a binary expression" << std::endl;
+            } else if (std::holds_alternative<NodeBinaryExpr *>(value.value()->expression)) {
+                std::cout << "define variable has a binary expression" << std::endl;
             }
+            consumeNode();
+        } else if (std::holds_alternative<NodeAssignVar*>(stmt)) {
+            std::cout << "assigning variable lwl" << std::endl;
+            consumeNode();
+        } else if (std::holds_alternative<NodeReturn*>(stmt)) {
+            std::cout << "returning variable lwl" << std::endl;
+            consumeNode();
+        } else if (std::holds_alternative<NodeScope*>(stmt)) {
+            std::cout << "how is there a scope wtf variable lwl" << std::endl;
+            consumeNode();
+        } else {
+            std::cerr << "don't know what this node is, dying...\n";
+        }
     }
-    void take() {
+    void consumeNode() {
         ++m_index;
     }
 

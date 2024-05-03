@@ -6,6 +6,7 @@
 
 #include "./Tokenizer.hpp"
 #include "./Parser.hpp"
+#include "Executer.hpp"
 
 int main (int argc, char* argv[]){
     if (argc != 2) {
@@ -38,7 +39,10 @@ int main (int argc, char* argv[]){
     }
     std::cout << "----------\n";
 
-    /* TODO: what 
+    Executer executer { prog };
+    executer.execute();
+
+    /* TODO: what
     for (size_t i {}; i < prog.statements.size(); ++i) {
         if (std::holds_alternative<NodeDefineVar*>(prog.statements[i]->statement)) {
 

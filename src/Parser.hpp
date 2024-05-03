@@ -126,6 +126,7 @@ private:
     }
 
     void consumeToken() {
+        std::cout << "consuming token" << std::endl;
         m_index++;
     }
 
@@ -150,6 +151,7 @@ private:
             || peekToken().value().type != TokenType::let) {
             return {};
         }
+        std::cout << "first consume 'let'" << std::endl;
         consumeToken();
 
         // expect identifier after 'let'
@@ -159,6 +161,7 @@ private:
             exit(EXIT_FAILURE);
         }
         const std::string ident { peekToken().value().value.value() };
+        std::cout << "second consume 'ident'" << std::endl;
         consumeToken();
 
         // valid variable declaration with no value
@@ -178,6 +181,7 @@ private:
             std::cerr << "Expected '=' in identifier definition\n";
             exit(EXIT_FAILURE);
         }
+        std::cout << "third consume, '='" << std::endl;
         consumeToken();
 
         // expect expression after '='
@@ -193,6 +197,7 @@ private:
             std::cerr << "Expected ';' after variable defnition\n";
             exit(EXIT_FAILURE);
         }
+
         consumeToken();
 
         // NOTE: copying strings but whatever
@@ -291,7 +296,8 @@ private:
             term->term.emplace<const identifier>(peekToken().value().value.value());
             consumeToken();
             return term;
-        } else if (peekToken().value().type == TokenType::int_lit) {
+        } else if (peekToken().value().type == TokenType::int_lit
+                    && !isOperator(peekToken(1))) {
             int valueInt { std::stoi(peekToken().value().value.value()) };
             term->term.emplace<int_literal>(valueInt);
             consumeToken();
@@ -329,6 +335,7 @@ private:
         return false;
     }
     std::optional<NodeBinaryExpr *> getNodeBinaryExpr() {
+        // TODO: make is so a binary expression can have multiple operators
         /*
         example:
         5 + 5 - 3 + 9
@@ -354,61 +361,61 @@ private:
 
         bool foundExpr = false;
 
-        while (!isTerm(peekToken()) || !isOperator(peekToken(1))) {
+        if (!isTerm(peekToken()) || !isOperator(peekToken(1))) {
+            return {};
+        }
+
+        // expect a right operand since we found a left operand and operator
+        if (!isTerm(peekToken(2))) {
+            std::cerr << "Expected right operand\n";
+        }
+
+        leftOperand->expression.emplace<NodeTerm *>( new NodeTerm {
+            .term { peekToken().value().value.value() }
+        });
+
+        TokenType _operator { peekToken(1).value().type };
+
+        rightOperand->expression.emplace<NodeTerm *>(new NodeTerm {
+            .term { peekToken(2).value().value.value() }
+        });
+
+        consumeToken(); // left operand
+        consumeToken(); // operator
+        consumeToken(); // right operand
 
 
-            // expect a right operand since we found a left operand and operator
-            if (!isTerm(peekToken(2))) {
-                std::cerr << "Expected right operand\n";
-            }
+        if (_operator == TokenType::plus) {
+            NodeBinaryExprAdd* node {
+                new NodeBinaryExprAdd { leftOperand, rightOperand }
+            };
+            binaryExpr->binaryExpr.emplace<NodeBinaryExprAdd *>(node);
+            foundExpr = true;
 
-            leftOperand->expression.emplace<NodeTerm *>( new NodeTerm {
-                .term { peekToken().value().value.value() }
-            });
+        } else if (_operator == TokenType::dash) {
+            NodeBinaryExprSub* node {
+                new NodeBinaryExprSub { leftOperand, rightOperand }
+            };
+            binaryExpr->binaryExpr.emplace<NodeBinaryExprSub *>(node);
+            foundExpr = true;
 
-            TokenType _operator { peekToken(1).value().type };
+        } else if (_operator == TokenType::asterisk) {
+            NodeBinaryExprMult* node {
+                new NodeBinaryExprMult { leftOperand, rightOperand }
+            };
+            binaryExpr->binaryExpr.emplace<NodeBinaryExprMult *>(node);
+            foundExpr = true;
 
-            rightOperand->expression.emplace<NodeTerm *>(new NodeTerm {
-                .term { peekToken(2).value().value.value() }
-            });
+        } else if (_operator == TokenType::forward_slash) {
+            NodeBinaryExprDiv* node {
+                new NodeBinaryExprDiv { leftOperand, rightOperand }
+            };
+            binaryExpr->binaryExpr.emplace<NodeBinaryExprDiv *>(node);
+            foundExpr = true;
 
-            consumeToken(); // left operand
-            consumeToken(); // operator
-            consumeToken(); // right operand
-
-
-            if (_operator == TokenType::plus) {
-                NodeBinaryExprAdd* node {
-                    new NodeBinaryExprAdd { leftOperand, rightOperand }
-                };
-                binaryExpr->binaryExpr.emplace<NodeBinaryExprAdd *>(node);
-                foundExpr = true;
-
-            } else if (_operator == TokenType::dash) {
-                NodeBinaryExprSub* node {
-                    new NodeBinaryExprSub { leftOperand, rightOperand }
-                };
-                binaryExpr->binaryExpr.emplace<NodeBinaryExprSub *>(node);
-                foundExpr = true;
-
-            } else if (_operator == TokenType::asterisk) {
-                NodeBinaryExprMult* node {
-                    new NodeBinaryExprMult { leftOperand, rightOperand }
-                };
-                binaryExpr->binaryExpr.emplace<NodeBinaryExprMult *>(node);
-                foundExpr = true;
-
-            } else if (_operator == TokenType::forward_slash) {
-                NodeBinaryExprDiv* node {
-                    new NodeBinaryExprDiv { leftOperand, rightOperand }
-                };
-                binaryExpr->binaryExpr.emplace<NodeBinaryExprDiv *>(node);
-                foundExpr = true;
-
-            } else {
-                std::cerr << "Invalid operator.\n";
-                exit(EXIT_FAILURE);
-            }
+        } else {
+            std::cerr << "Invalid operator.\n";
+            exit(EXIT_FAILURE);
         }
 
         if (foundExpr) {
