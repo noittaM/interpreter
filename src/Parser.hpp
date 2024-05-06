@@ -332,6 +332,7 @@ private:
         }
         return false;
     }
+
     std::optional<NodeBinaryExpr *> getNodeBinaryExpr() {
         if (!isOperator(peekToken(1))) {
             return {};
