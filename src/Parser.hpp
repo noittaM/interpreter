@@ -1,7 +1,6 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
-#include <atomic>
 #include <cstdlib>
 #include <ostream>
 #include <string>
@@ -25,35 +24,35 @@ struct BinaryOperator {
 
 struct NodeExpr;
 
-struct NodeBinaryExprAdd {
-    NodeExpr* leftOperand;
-    NodeExpr* rightOperand;
-};
-
-struct NodeBinaryExprSub {
-    NodeExpr* leftOperand;
-    NodeExpr* rightOperand;
-};
-
-struct NodeBinaryExprMult {
-    NodeExpr* leftOperand;
-    NodeExpr* rightOperand;
-};
-
-struct NodeBinaryExprDiv {
-    NodeExpr* leftOperand;
-    NodeExpr* rightOperand;
-};
+// struct NodeBinaryExprAdd {
+//     NodeExpr* leftOperand;
+//     NodeExpr* rightOperand;
+// };
+//
+// struct NodeBinaryExprSub {
+//     NodeExpr* leftOperand;
+//     NodeExpr* rightOperand;
+// };
+//
+// struct NodeBinaryExprMult {
+//     NodeExpr* leftOperand;
+//     NodeExpr* rightOperand;
+// };
+//
+// struct NodeBinaryExprDiv {
+//     NodeExpr* leftOperand;
+//     NodeExpr* rightOperand;
+// };
 
 struct NodeBinaryExpr {
-    std::variant <
-        NodeBinaryExprAdd*,
-        NodeBinaryExprSub*,
-        NodeBinaryExprMult*,
-        NodeBinaryExprDiv*
-    > binaryExpr;
-    // std::vector<TokenType> operators;
-    // std::vector<Term *> operands;
+    // std::variant <
+    //     NodeBinaryExprAdd*,
+    //     NodeBinaryExprSub*,
+    //     NodeBinaryExprMult*,
+    //     NodeBinaryExprDiv*
+    // > binaryExpr;
+    std::vector<TokenType> operators;
+    std::vector<NodeTerm *> operands;
 };
 
 struct NodeStatement;
@@ -333,68 +332,19 @@ private:
         }
         return false;
     }
-    struct newBinaryExpression {
-        std::vector<TokenType> operators;
-        std::vector<NodeTerm *> operands;
-    };
     std::optional<NodeBinaryExpr *> getNodeBinaryExpr() {
-        // TODO: make is so a binary expression can have multiple operators
-        /*
-        example:
-        5 + 5 - 3 + 9
-        vvvvv
-        binaryAdd(5, 5) - 3 + 9
-                    vvvvvv
-        binarySub(binaryAdd(5, 5), 3) + 9
-                                vvvvvvvvv
-        binaryAdd(binarySub(binaryAdd(5, 5), 3), 9)
-        */
-
-
-        //*check if there is a term
-        // if yes then make sure there is an operator
-        // if either is not found, return {}
-        // if both found then expect a right term
-        // if not found explode
-        // if found make a biexper depending on the operator
-        // repeat *
-        NodeExpr* leftOperand { new NodeExpr };
-        NodeExpr* rightOperand { new NodeExpr };
-        NodeBinaryExpr* binaryExpr { new NodeBinaryExpr };
-
-        bool foundExpr = false;
-
-        if (!isTerm(peekToken()) || !isOperator(peekToken(1))) {
-            return {};
-        }
-
-        #if 1
-        // check if there is an operator
-        // if there is check for a term
-        // if there is a term and operator
-        // consume only the first term then
-        // while (true)
-        // check for operator
-        // if found consume it and check for a term
-        // if found consume
-        // if not die
-        // if operator not found
-        // break
-        // also make sure you go loop at least once. what why?
-
-
         if (!isOperator(peekToken(1))) {
             return {};
         }
 
-        newBinaryExpression* expr;
+        NodeBinaryExpr* expr;
 
         if (peekToken().value().type == TokenType::identifier) {
             if (!peekToken().value().value.has_value()) {
                 std::cerr << "parser error: got identifier with no value\n";
             }
 
-            expr = new newBinaryExpression;
+            expr = new NodeBinaryExpr;
             NodeTerm* term { new NodeTerm { peekToken().value().value.value() }};
 
             expr->operands.push_back(term);
@@ -405,7 +355,7 @@ private:
                 std::cerr << "parser error: got int literal with no value\n";
             }
 
-            expr = new newBinaryExpression;
+            expr = new NodeBinaryExpr;
             NodeTerm* term { new NodeTerm { std::stoi(peekToken().value().value.value()) }};
 
             expr->operands.push_back(term);
@@ -416,7 +366,6 @@ private:
         }
 
         while (true) {
-            expr->operators.push_back(peekToken(1).value().type);
             if (!isOperator(peekToken())) {
                 break;
             }
@@ -449,85 +398,6 @@ private:
                 exit(EXIT_FAILURE);
             }
 
-        }
-        #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // expect a right operand since we found a left operand and operator
-        if (!isTerm(peekToken(2))) {
-            std::cerr << "Expected right operand\n";
-        }
-
-        leftOperand->expression.emplace<NodeTerm *>( new NodeTerm {
-            .term { peekToken().value().value.value() }
-        });
-
-        TokenType _operator { peekToken(1).value().type };
-
-        rightOperand->expression.emplace<NodeTerm *>(new NodeTerm {
-            .term { peekToken(2).value().value.value() }
-        });
-
-        consumeToken(); // left operand
-        consumeToken(); // operator
-        consumeToken(); // right operand
-
-
-        if (_operator == TokenType::plus) {
-            NodeBinaryExprAdd* node {
-                new NodeBinaryExprAdd { leftOperand, rightOperand }
-            };
-            binaryExpr->binaryExpr.emplace<NodeBinaryExprAdd *>(node);
-            foundExpr = true;
-
-        } else if (_operator == TokenType::dash) {
-            NodeBinaryExprSub* node {
-                new NodeBinaryExprSub { leftOperand, rightOperand }
-            };
-            binaryExpr->binaryExpr.emplace<NodeBinaryExprSub *>(node);
-            foundExpr = true;
-
-        } else if (_operator == TokenType::asterisk) {
-            NodeBinaryExprMult* node {
-                new NodeBinaryExprMult { leftOperand, rightOperand }
-            };
-            binaryExpr->binaryExpr.emplace<NodeBinaryExprMult *>(node);
-            foundExpr = true;
-
-        } else if (_operator == TokenType::forward_slash) {
-            NodeBinaryExprDiv* node {
-                new NodeBinaryExprDiv { leftOperand, rightOperand }
-            };
-            binaryExpr->binaryExpr.emplace<NodeBinaryExprDiv *>(node);
-            foundExpr = true;
-
-        } else {
-            std::cerr << "Invalid operator.\n";
-            exit(EXIT_FAILURE);
-        }
-
-        if (foundExpr) {
-            return binaryExpr;
         }
         return {};
     }
