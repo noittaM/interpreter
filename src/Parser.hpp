@@ -24,33 +24,7 @@ struct BinaryOperator {
 
 struct NodeExpr;
 
-// struct NodeBinaryExprAdd {
-//     NodeExpr* leftOperand;
-//     NodeExpr* rightOperand;
-// };
-//
-// struct NodeBinaryExprSub {
-//     NodeExpr* leftOperand;
-//     NodeExpr* rightOperand;
-// };
-//
-// struct NodeBinaryExprMult {
-//     NodeExpr* leftOperand;
-//     NodeExpr* rightOperand;
-// };
-//
-// struct NodeBinaryExprDiv {
-//     NodeExpr* leftOperand;
-//     NodeExpr* rightOperand;
-// };
-
 struct NodeBinaryExpr {
-    // std::variant <
-    //     NodeBinaryExprAdd*,
-    //     NodeBinaryExprSub*,
-    //     NodeBinaryExprMult*,
-    //     NodeBinaryExprDiv*
-    // > binaryExpr;
     std::vector<TokenType> operators;
     std::vector<NodeTerm *> operands;
 };
@@ -66,12 +40,12 @@ struct NodeExpr {
 };
 
 struct NodeDefineVar{
-    const std::string& identifier;
+    const std::string identifier;
     std::optional <NodeExpr *> value; // TODO: Types
 };
 
 struct NodeAssignVar {
-    const std::string& identifier;
+    const std::string identifier;
     NodeExpr* value;
 };
 
@@ -110,7 +84,6 @@ public:
 
     NodeProgram parse() {
         while (std::optional<NodeStatement *> stmt { getNodeStatement() }) {
-            // std::cout << stmt->statement.index() << std::endl;
             m_prog.statements.push_back(stmt.value());
         }
         return m_prog; 
@@ -129,24 +102,27 @@ private:
     }
 
     void consumeToken() {
-        std::cout << "consuming token" << std::endl;
         m_index++;
     }
 
     std::optional<NodeStatement *> getNodeStatement() {
-        NodeStatement* stmt { new NodeStatement };
+        NodeStatement* stmt;
 
         if (std::optional<NodeDefineVar *> node = getNodeDefineVar()) {
+            stmt = new NodeStatement;
             stmt->statement = node.value();
+            return stmt;
         } else if (std::optional<NodeAssignVar *> node = getNodeAssignVar()) {
+            stmt = new NodeStatement;
             stmt->statement = node.value();
+            return stmt;
         } else if (std::optional<NodeReturn *> node = getNodeReturn()) {
+            stmt = new NodeStatement;
             stmt->statement = node.value();
+            return stmt;
         } else {
             return {};
         }
-
-        return stmt;
     }
 
     std::optional<NodeDefineVar *> getNodeDefineVar() {
@@ -154,7 +130,6 @@ private:
             || peekToken().value().type != TokenType::let) {
             return {};
         }
-        std::cout << "first consume 'let'" << std::endl;
         consumeToken();
 
         // expect identifier after 'let'
@@ -164,7 +139,6 @@ private:
             exit(EXIT_FAILURE);
         }
         const std::string ident { peekToken().value().value.value() };
-        std::cout << "second consume 'ident'" << std::endl;
         consumeToken();
 
         // valid variable declaration with no value
@@ -173,7 +147,7 @@ private:
             consumeToken();
             NodeDefineVar* node { new NodeDefineVar {
                 .identifier { ident }, // NOTE: copying strings around
-                .value { {} }
+                .value { }
             }};
             return node;
         }
@@ -184,7 +158,6 @@ private:
             std::cerr << "Expected '=' in identifier definition\n";
             exit(EXIT_FAILURE);
         }
-        std::cout << "third consume, '='" << std::endl;
         consumeToken();
 
         // expect expression after '='
@@ -214,8 +187,8 @@ private:
         }
 
         if (peekToken().value().type != TokenType::identifier
-            || peekToken(1).has_value()
-            || peekToken(1).value().type == TokenType::equal
+            || !peekToken(1).has_value()
+            || peekToken(1).value().type != TokenType::equal
         ) {
             return {};
         }
@@ -270,15 +243,18 @@ private:
     }
 
     std::optional<NodeExpr *> getNodeExpr() {
-        NodeExpr* expr { new NodeExpr };
+        NodeExpr* expr;
         if (std::optional<NodeTerm *> node = getNodeTerm()) {
+            expr = new NodeExpr;
             expr->expression = node.value();
+            return expr;
         } else if (std::optional<NodeBinaryExpr *> node = getNodeBinaryExpr()) {
+            expr = new NodeExpr;
             expr->expression = node.value();
+            return expr;
         } else {
             return {};
         }
-        return expr;
     }
 
     std::optional<NodeTerm *> getNodeTerm() {
@@ -286,17 +262,21 @@ private:
             return {};
         }
 
-        NodeTerm* term { new NodeTerm };
+        NodeTerm* term;
 
         if (peekToken().value().type == TokenType::identifier
             && !isOperator(peekToken(1))) {
             // NOTE: copying strings around again
+
+            term = new NodeTerm;
             term->term.emplace<const identifier>(peekToken().value().value.value());
             consumeToken();
             return term;
         } else if (peekToken().value().type == TokenType::int_lit
                     && !isOperator(peekToken(1))) {
             int valueInt { std::stoi(peekToken().value().value.value()) };
+
+            term = new NodeTerm;
             term->term.emplace<int_literal>(valueInt);
             consumeToken();
             return term;
@@ -400,7 +380,7 @@ private:
             }
 
         }
-        return {};
+        return expr;
     }
 };
 
