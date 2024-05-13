@@ -86,7 +86,7 @@ public:
         while (std::optional<NodeStatement *> stmt { getNodeStatement() }) {
             m_prog.statements.push_back(stmt.value());
         }
-        return m_prog; 
+        return m_prog;
     }
 
 private:
@@ -218,7 +218,8 @@ private:
 
     std::optional<NodeReturn *> getNodeReturn() {
         if (!peekToken().has_value()
-            || peekToken().value().type != TokenType::_return) {
+            || peekToken().value().type != TokenType::_return
+        ) {
             return {};
         }
         consumeToken();
@@ -232,7 +233,8 @@ private:
 
         // expect ';'
         if (!peekToken().has_value()
-            || peekToken().value().type != TokenType::semi) {
+            || peekToken().value().type != TokenType::semi
+        ) {
             std::cerr << "Expected ';' after return expression\n";
             exit(EXIT_FAILURE);
         }
@@ -240,6 +242,30 @@ private:
 
         NodeReturn* node { new NodeReturn { expr.value() } };
         return node;
+    }
+
+    std::optional<NodeScope *> getNodeScope() {
+        if (!peekToken().has_value()
+            || peekToken().value().type != TokenType::curly_open
+        ) {
+            return {};
+        }
+        consumeToken();
+
+        NodeScope* scope { new NodeScope };
+        while (std::optional<NodeStatement *> stmt { getNodeStatement() }) {
+            scope->statements.push_back(stmt.value());
+        }
+
+        if (peekToken().has_value()
+            && peekToken().value().type == TokenType::curly_close
+        ) {
+            consumeToken();
+            return scope;
+        } else {
+            std::cerr << "expected '}'\n";
+            exit(EXIT_FAILURE);
+        }
     }
 
     std::optional<NodeExpr *> getNodeExpr() {
