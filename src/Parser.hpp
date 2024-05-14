@@ -120,6 +120,10 @@ private:
             stmt = new NodeStatement;
             stmt->statement = node.value();
             return stmt;
+        } else if (std::optional<NodeScope *> node = getNodeScope()) {
+            stmt = new NodeStatement;
+            stmt->statement = node.value();
+            return stmt;
         } else {
             return {};
         }

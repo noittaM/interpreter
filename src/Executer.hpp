@@ -23,33 +23,34 @@ public:
     }
 
     void execute() {
-        while (peekNode().has_value()) {
-            executeNode(peekNode().value()); 
-            consumeNode();
+        while (peekStmt().has_value()) {
+            executeStmt(peekStmt().value()); 
+            consumeStmt();
         }
     }
 
 private:
-    void executeNode(const NodeStatement* node) {
-        if (std::holds_alternative<NodeDefineVar*>(node->statement)) {
-            defineVariable(std::get<NodeDefineVar *>(node->statement));
+    void executeStmt(const NodeStatement* node) {
+        if (std::holds_alternative<NodeDefineVar *>(node->statement)) {
+            executeStmtDefineVar(std::get<NodeDefineVar *>(node->statement));
 
-        } else if (std::holds_alternative<NodeAssignVar*>(node->statement)) {
-            assignVariable(std::get<NodeAssignVar*>(node->statement));
+        } else if (std::holds_alternative<NodeAssignVar *>(node->statement)) {
+            executeStmtAssignVariable(std::get<NodeAssignVar *>(node->statement));
 
-        } else if (std::holds_alternative<NodeReturn*>(node->statement)) {
-            returnExpression(std::get<NodeReturn *>(node->statement));
-        } else if (std::holds_alternative<NodeScope*>(node->statement)) {
-            std::cerr << "scope is not implemented yet\n";
-            exit(EXIT_FAILURE);
+        } else if (std::holds_alternative<NodeReturn *>(node->statement)) {
+            executreStmtReturnExpression(std::get<NodeReturn *>(node->statement));
+
+        } else if (std::holds_alternative<NodeScope *>(node->statement)) {
+            executeStmtScope(std::get<NodeScope *>(node->statement));
+
         } else {
             std::cerr << "statment has unexpected variant";
         }
     }
 
-    void defineVariable(const NodeDefineVar* const node) {
+    void executeStmtDefineVar(const NodeDefineVar* const node) {
         const std::string ident = node->identifier;
-        const auto it { // what the hell type is this
+        std::vector<Variable>::iterator it { // what the hell type is this
             std::find_if(
                     m_vars.begin(),
                     m_vars.end(),
@@ -57,7 +58,8 @@ private:
                 { return ident == var.ident; })
         };
         if (it != m_vars.end()) {
-            std::cerr << "Variable " << ident << " already exists.\n";
+            std::cerr << "Variable " << ident << " already exists."
+                << std::endl;
             exit(EXIT_FAILURE);
         }
 
@@ -70,12 +72,12 @@ private:
         }
     }
 
-    void assignVariable(const NodeAssignVar* const node) {
+    void executeStmtAssignVariable(const NodeAssignVar* const node) {
 
         const std::string ident = node->identifier;
         const int value { evaluateExpression(node->value) };
 
-        const auto it { // what the hell type is this
+        std::vector<Variable>::iterator it { // what the hell type is this
             std::find_if(
                     m_vars.begin(),
                     m_vars.end(),
@@ -91,9 +93,23 @@ private:
         it->value = value;
     }
 
-    void returnExpression(const NodeReturn* const node) const {
+    void executreStmtReturnExpression(const NodeReturn* const node) const {
         int value { evaluateExpression(node->value) };
         exit(value); // FIXME: horrible
+    }
+
+    void executeStmtScope(const NodeScope* const node) {
+        m_scopes.push_back(m_vars.size());
+
+        for (const NodeStatement* stmt : node->statements) {
+            executeStmt(stmt); 
+        }
+
+        // pop variables defined in scope
+        for (std::size_t i = m_vars.size() - 1; i >= m_scopes.back(); --i) {
+            m_vars.pop_back();
+        }
+        m_scopes.pop_back();
     }
 
     int evaluateTerm(const NodeTerm* const term) const {
@@ -102,19 +118,21 @@ private:
 
         } else if (std::holds_alternative<const identifier>(term->term)) {
             const std::string& ident { std::get<const identifier>(term->term) };
-            const auto it { std::find_if( // check if the identifer exists
+            std::vector<Variable>::const_iterator it { std::find_if( // check if the identifer exists
                 m_vars.begin(), m_vars.end(),
                 [&ident] (const Variable& var)
                 { return var.ident == ident; }
             )};
 
             if (it == m_vars.end()) {
-                std::cerr << "error: use of undefined variable" << ident << '\n';
+                std::cerr << "error: use of undefined variable " << ident
+                    << std::endl;
                 exit(EXIT_FAILURE);
             }
 
             if (!it->value.has_value()) {
-                std::cerr << "error: use of uninitialized variable" << ident << '\n';
+                std::cerr << "error: use of uninitialized variable " << ident
+                    << std::endl;
                 exit(EXIT_FAILURE);
             }
 
@@ -122,7 +140,7 @@ private:
             return it->value.value();
         } else {
             // unreachable?
-            std::cerr << "term has unknown variant\n";
+            std::cerr << "term has unknown variant" << std::endl;
             exit(EXIT_FAILURE);
         }
     }
@@ -132,8 +150,8 @@ private:
 
         if (expr->operands.size() != expr->operators.size() + 1) {
             std::cerr << "wrong number of operatos for number of operands\n"
-            << "number of operators: " << expr->operators.size()
-            << "\nnumberof operands: " << expr->operands.size();
+                << "number of operators: " << expr->operators.size()
+                << "numberof operands: " << expr->operands.size() << std::endl;
         }
 
         int valueOfExpression { evaluateTerm(expr->operands.at(0)) };
@@ -152,7 +170,7 @@ private:
                     int devisor;
                     devisor = evaluateTerm(expr->operands.at(i+1));
                     if (devisor == 0) {
-                        std::cerr << "attempting to devide by 0...dying...\n";
+                        std::cerr << "attempting to devide by 0...dying..." << std::endl;
                         exit(EXIT_FAILURE);
                     }
 
@@ -166,7 +184,7 @@ private:
                 default:
                     std::cerr <<
                         "trying to evaluate binary expression "
-                        << "with operators of wrong type\n";
+                        << "with operators of wrong type" << std::endl;
                     exit(EXIT_FAILURE);
             }
         }
@@ -184,15 +202,15 @@ private:
                 std::get<NodeBinaryExpr *>(expr->expression));
         }
 
-        std::cerr << "expression holds unexpected variant\n";
+        std::cerr << "expression holds unexpected variant" << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    void consumeNode() {
+    void consumeStmt() {
         ++m_index;
     }
 
-    std::optional<NodeStatement*> peekNode() const {
+    std::optional<NodeStatement *> peekStmt() const {
         if (m_index < m_prog.statements.size()) {
             return m_prog.statements[m_index];
         }
@@ -200,9 +218,10 @@ private:
     }
 
 private:
-NodeProgram m_prog;
-size_t m_index{};
-std::vector<Variable> m_vars;
+    NodeProgram m_prog;
+    std::size_t m_index{};
+    std::vector<std::size_t> m_scopes;
+    std::vector<Variable> m_vars;
 };
 
 #endif // EXECUTER_HPP
