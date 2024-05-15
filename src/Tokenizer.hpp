@@ -6,7 +6,6 @@
 #include <iostream>
 #include <optional>
 
-
 enum class TokenType {
     _return ,
     identifier,
@@ -22,20 +21,13 @@ enum class TokenType {
     equal
 };
 
-
 struct Token{
     const TokenType type;
     const std::optional<std::string> value;
 };
 
-
 class Tokenizer {
 private:
-    const std::string m_inString;
-    size_t m_index{0};
-
-
-
     std::optional<char> peekChar() const {
         if(m_index < m_inString.length())
             return m_inString[m_index];
@@ -67,17 +59,14 @@ public:
                 if (buf == "return") {
                     tokens.push_back({ .type = TokenType::_return, .value = {} });
                     buf.clear();
-                    continue;
 
                 } else if (buf == "let") {
                     tokens.push_back({ .type = TokenType::let, .value = {} });
                     buf.clear();
-                    continue;
 
                 } else {
                     tokens.push_back({ .type = TokenType::identifier, .value = buf});
                     buf.clear();
-                    continue;
 
                 }
             } else if (std::isdigit(peekChar().value())) {
@@ -86,64 +75,81 @@ public:
                     consumeChar();
                 }
 
-                tokens.push_back({ .type = TokenType::int_lit, .value = buf });
+                tokens.push_back( Token {
+                    .type = TokenType::int_lit,
+                    .value = buf
+                });
                 buf.clear();
-                continue;
 
             } else if (peekChar().value() == '+') {
-                tokens.push_back({ .type = TokenType::plus, .value = {} });
+                tokens.push_back( Token { .type = TokenType::plus,
+                    .value = {}
+                });
                 consumeChar();
-                buf.clear();// TODO: why?
-                continue;
 
-            } else if (peekChar().value() == '-'){
-                tokens.push_back({ .type = TokenType::dash, .value = {} });
+            } else if (peekChar().value() == '-') {
+                tokens.push_back( Token {
+                    .type = TokenType::dash,
+                    .value = {}
+                });
                 consumeChar();
-                buf.clear();// TODO: why?
-                continue;
 
-            } else if (peekChar().value() == '*'){
-                tokens.push_back({ .type = TokenType::asterisk, .value = {} });
+            } else if (peekChar().value() == '*') {
+                tokens.push_back( Token { .type = TokenType::asterisk,
+                    .value = {}
+                });
                 consumeChar();
-                buf.clear();// TODO: why?
-                continue;
 
-            } else if (peekChar().value() == '/'){
-                tokens.push_back({ .type = TokenType::forward_slash, .value = {} });
+            } else if (peekChar().value() == '/') {
+                tokens.push_back( Token {
+                    .type = TokenType::forward_slash,
+                    .value = {}
+                });
                 consumeChar();
-                buf.clear();// TODO: why?
-                continue;
 
             } else if (peekChar().value() == '=') {
-                tokens.push_back({ .type = TokenType::equal, .value = {} });
+                tokens.push_back( Token {
+                    .type = TokenType::equal,
+                    .value = {}
+                });
                 consumeChar();
-                buf.clear();
-                continue;
 
             } else if (peekChar().value() == ';') {
-                tokens.push_back({ .type = TokenType::semi, .value = {} });
+                tokens.push_back( Token {
+                    .type = TokenType::semi,
+                    .value = {}
+                });
                 consumeChar();
-                buf.clear();
-                continue;
+
             } else if (peekChar().value() == '{') {
-                tokens.push_back({ .type = TokenType::curly_open, .value = {} });
+                tokens.push_back( Token {
+                    .type = TokenType::curly_open,
+                    .value = {}
+                });
                 consumeChar();
-                buf.clear();
+
             } else if (peekChar().value() == '}') {
-                tokens.push_back({ .type = TokenType::curly_close, .value = {} });
+                tokens.push_back( Token {
+                    .type = TokenType::curly_close,
+                    .value = {}
+                });
                 consumeChar();
-                buf.clear();
+
             } else if(std::isspace(peekChar().value())) {
                 consumeChar();
-                continue;
 
             } else {
-                std::cerr << "Unrecognized symbol: '" << peekChar().value() << "', dying rn...\n";
+                std::cerr << "Unrecognized symbol: '" << peekChar().value() <<
+                    "', dying rn..." << std::endl;
                 exit(EXIT_FAILURE);
             }
         }
         return tokens;
     }
+
+private:
+    const std::string m_inString;
+    size_t m_index{};
 };
 
 

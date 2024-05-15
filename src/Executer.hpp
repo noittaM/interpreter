@@ -10,7 +10,7 @@
 #include "Tokenizer.hpp"
 
 struct Variable{
-    std::string ident;
+    ident identifier;
     std::optional<int> value;
 };
 
@@ -31,31 +31,31 @@ public:
 
 private:
     void executeStmt(const NodeStatement* node) {
-        if (std::holds_alternative<NodeDefineVar *>(node->statement)) {
-            executeStmtDefineVar(std::get<NodeDefineVar *>(node->statement));
+        if (std::holds_alternative<NodeStmtDefineVar *>(node->statement)) {
+            executeStmtDefineVar(std::get<NodeStmtDefineVar *>(node->statement));
 
-        } else if (std::holds_alternative<NodeAssignVar *>(node->statement)) {
-            executeStmtAssignVariable(std::get<NodeAssignVar *>(node->statement));
+        } else if (std::holds_alternative<NodeStmtAssignVar *>(node->statement)) {
+            executeStmtAssignVariable(std::get<NodeStmtAssignVar *>(node->statement));
 
-        } else if (std::holds_alternative<NodeReturn *>(node->statement)) {
-            executreStmtReturnExpression(std::get<NodeReturn *>(node->statement));
+        } else if (std::holds_alternative<NodeStmtReturn *>(node->statement)) {
+            executreStmtReturnExpression(std::get<NodeStmtReturn *>(node->statement));
 
-        } else if (std::holds_alternative<NodeScope *>(node->statement)) {
-            executeStmtScope(std::get<NodeScope *>(node->statement));
+        } else if (std::holds_alternative<NodeStmtScope *>(node->statement)) {
+            executeStmtScope(std::get<NodeStmtScope *>(node->statement));
 
         } else {
             std::cerr << "statment has unexpected variant";
         }
     }
 
-    void executeStmtDefineVar(const NodeDefineVar* const node) {
+    void executeStmtDefineVar(const NodeStmtDefineVar* const node) {
         const std::string ident = node->identifier;
         std::vector<Variable>::iterator it { // what the hell type is this
             std::find_if(
                     m_vars.begin(),
                     m_vars.end(),
                     [&ident](const Variable& var)
-                { return ident == var.ident; })
+                { return ident == var.identifier; })
         };
         if (it != m_vars.end()) {
             std::cerr << "Variable " << ident << " already exists."
@@ -72,7 +72,7 @@ private:
         }
     }
 
-    void executeStmtAssignVariable(const NodeAssignVar* const node) {
+    void executeStmtAssignVariable(const NodeStmtAssignVar* const node) {
 
         const std::string ident = node->identifier;
         const int value { evaluateExpression(node->value) };
@@ -82,7 +82,7 @@ private:
                     m_vars.begin(),
                     m_vars.end(),
                     [&ident](const Variable& var)
-                { return ident == var.ident; })
+                { return ident == var.identifier; })
         };
 
         if (it == m_vars.end()) {
@@ -93,12 +93,12 @@ private:
         it->value = value;
     }
 
-    void executreStmtReturnExpression(const NodeReturn* const node) const {
+    void executreStmtReturnExpression(const NodeStmtReturn* const node) const {
         int value { evaluateExpression(node->value) };
         exit(value); // FIXME: horrible
     }
 
-    void executeStmtScope(const NodeScope* const node) {
+    void executeStmtScope(const NodeStmtScope* const node) {
         m_scopes.push_back(m_vars.size());
 
         for (const NodeStatement* stmt : node->statements) {
@@ -116,22 +116,22 @@ private:
         if (std::holds_alternative<int_literal>(term->term)) {
             return std::get<int_literal>(term->term);
 
-        } else if (std::holds_alternative<const identifier>(term->term)) {
-            const std::string& ident { std::get<const identifier>(term->term) };
+        } else if (std::holds_alternative<ident>(term->term)) {
+            ident& identifier { std::get<ident>(term->term) };
             std::vector<Variable>::const_iterator it { std::find_if( // check if the identifer exists
                 m_vars.begin(), m_vars.end(),
-                [&ident] (const Variable& var)
-                { return var.ident == ident; }
+                [&identifier] (const Variable& var)
+                { return var.identifier == identifier; }
             )};
 
             if (it == m_vars.end()) {
-                std::cerr << "error: use of undefined variable " << ident
+                std::cerr << "error: use of undefined variable " << identifier
                     << std::endl;
                 exit(EXIT_FAILURE);
             }
 
             if (!it->value.has_value()) {
-                std::cerr << "error: use of uninitialized variable " << ident
+                std::cerr << "error: use of uninitialized variable " << identifier
                     << std::endl;
                 exit(EXIT_FAILURE);
             }

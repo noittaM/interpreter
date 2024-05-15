@@ -12,54 +12,52 @@
 #include "Tokenizer.hpp"
 
 using int_literal = int;
-using identifier = std::string;
+using ident = const std::string;
 
 struct NodeTerm {
-    std::variant <int_literal, const identifier> term;
+    std::variant <int_literal, ident> term;
 };
 
 struct BinaryOperator {
     TokenType _operator; // TODO: change TokenType to enum of operators?
 };
 
-struct NodeExpr;
-
 struct NodeBinaryExpr {
     std::vector<TokenType> operators;
     std::vector<NodeTerm *> operands;
-};
-
-struct NodeStatement;
-
-struct NodeScope {
-    std::vector <NodeStatement *> statements;
 };
 
 struct NodeExpr {
     std::variant <NodeTerm *, NodeBinaryExpr *> expression;
 };
 
-struct NodeDefineVar{
+struct NodeStmtDefineVar{
     const std::string identifier;
     std::optional <NodeExpr *> value; // TODO: Types
 };
 
-struct NodeAssignVar {
+struct NodeStmtAssignVar {
     const std::string identifier;
     NodeExpr* value;
 };
 
-struct NodeReturn {
+struct NodeStmtReturn {
     NodeExpr* value;
 };
 
+struct NodeStmtScope;
+
 struct NodeStatement {
     std::variant <
-        NodeDefineVar*,
-        NodeAssignVar*,
-        NodeReturn*,
-        NodeScope*
+        NodeStmtDefineVar*,
+        NodeStmtAssignVar*,
+        NodeStmtReturn*,
+        NodeStmtScope*
     > statement;
+};
+
+struct NodeStmtScope {
+    std::vector <NodeStatement *> statements;
 };
 
 struct NodeProgram {
@@ -108,19 +106,19 @@ private:
     std::optional<NodeStatement *> getNodeStatement() {
         NodeStatement* stmt;
 
-        if (std::optional<NodeDefineVar *> node = getNodeDefineVar()) {
+        if (std::optional<NodeStmtDefineVar *> node = getNodeDefineVar()) {
             stmt = new NodeStatement;
             stmt->statement = node.value();
             return stmt;
-        } else if (std::optional<NodeAssignVar *> node = getNodeAssignVar()) {
+        } else if (std::optional<NodeStmtAssignVar *> node = getNodeAssignVar()) {
             stmt = new NodeStatement;
             stmt->statement = node.value();
             return stmt;
-        } else if (std::optional<NodeReturn *> node = getNodeReturn()) {
+        } else if (std::optional<NodeStmtReturn *> node = getNodeReturn()) {
             stmt = new NodeStatement;
             stmt->statement = node.value();
             return stmt;
-        } else if (std::optional<NodeScope *> node = getNodeScope()) {
+        } else if (std::optional<NodeStmtScope *> node = getNodeScope()) {
             stmt = new NodeStatement;
             stmt->statement = node.value();
             return stmt;
@@ -129,7 +127,7 @@ private:
         }
     }
 
-    std::optional<NodeDefineVar *> getNodeDefineVar() {
+    std::optional<NodeStmtDefineVar *> getNodeDefineVar() {
         if (!peekToken().has_value()
             || peekToken().value().type != TokenType::let) {
             return {};
@@ -149,7 +147,7 @@ private:
         if (peekToken().has_value()
             && peekToken().value().type == TokenType::semi) {
             consumeToken();
-            NodeDefineVar* node { new NodeDefineVar {
+            NodeStmtDefineVar* node { new NodeStmtDefineVar {
                 .identifier { ident }, // NOTE: copying strings around
                 .value { }
             }};
@@ -181,11 +179,11 @@ private:
         consumeToken();
 
         // NOTE: copying strings but whatever
-        NodeDefineVar* node { new NodeDefineVar { ident, expr.value() } };
+        NodeStmtDefineVar* node { new NodeStmtDefineVar { ident, expr.value() } };
         return node;
     }
 
-    std::optional<NodeAssignVar *> getNodeAssignVar() {
+    std::optional<NodeStmtAssignVar *> getNodeAssignVar() {
         if (!peekToken().has_value()) {
             return {};
         }
@@ -216,11 +214,11 @@ private:
         consumeToken();
 
         // NOTE: copying strings but whatever
-        NodeAssignVar* node { new NodeAssignVar { ident, expr.value() } };
+        NodeStmtAssignVar* node { new NodeStmtAssignVar { ident, expr.value() } };
         return node;
     }
 
-    std::optional<NodeReturn *> getNodeReturn() {
+    std::optional<NodeStmtReturn *> getNodeReturn() {
         if (!peekToken().has_value()
             || peekToken().value().type != TokenType::_return
         ) {
@@ -244,11 +242,11 @@ private:
         }
         consumeToken();
 
-        NodeReturn* node { new NodeReturn { expr.value() } };
+        NodeStmtReturn* node { new NodeStmtReturn { expr.value() } };
         return node;
     }
 
-    std::optional<NodeScope *> getNodeScope() {
+    std::optional<NodeStmtScope *> getNodeScope() {
         if (!peekToken().has_value()
             || peekToken().value().type != TokenType::curly_open
         ) {
@@ -256,7 +254,7 @@ private:
         }
         consumeToken();
 
-        NodeScope* scope { new NodeScope };
+        NodeStmtScope* scope { new NodeStmtScope };
         while (std::optional<NodeStatement *> stmt { getNodeStatement() }) {
             scope->statements.push_back(stmt.value());
         }
@@ -299,7 +297,7 @@ private:
             // NOTE: copying strings around again
 
             term = new NodeTerm;
-            term->term.emplace<const identifier>(peekToken().value().value.value());
+            term->term.emplace<ident>(peekToken().value().value.value());
             consumeToken();
             return term;
         } else if (peekToken().value().type == TokenType::int_lit
@@ -415,13 +413,13 @@ private:
 };
 
 inline std::ostream& operator<< (std::ostream& out, NodeStatement* node) {
-    if (std::holds_alternative<NodeDefineVar*>(node->statement)) {
+    if (std::holds_alternative<NodeStmtDefineVar*>(node->statement)) {
         return out << "NodeDefineVar";
-    } else if (std::holds_alternative<NodeAssignVar*>(node->statement)) {
+    } else if (std::holds_alternative<NodeStmtAssignVar*>(node->statement)) {
         return out << "NodeAssignVar";
-    } else if (std::holds_alternative<NodeReturn*>(node->statement)) {
+    } else if (std::holds_alternative<NodeStmtReturn*>(node->statement)) {
         return out << "NodeReturn";
-    } else if (std::holds_alternative<NodeScope*>(node->statement)) {
+    } else if (std::holds_alternative<NodeStmtScope*>(node->statement)) {
         return out << "NodeScope";
     } else {
         out << node->statement.index();
