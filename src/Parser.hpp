@@ -1,6 +1,7 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
+#include <cassert>
 #include <cstdlib>
 #include <ostream>
 #include <string>
@@ -349,9 +350,8 @@ private:
         NodeBinaryExpr* expr;
 
         if (peekToken().value().type == TokenType::identifier) {
-            if (!peekToken().value().value.has_value()) {
-                std::cerr << "parser error: got identifier with no value\n";
-            }
+            assert((peekToken().value().value.has_value() == true) &&
+                   "parser error: got identifier with no value\n");
 
             expr = new NodeBinaryExpr;
             NodeTerm* term { new NodeTerm { peekToken().value().value.value() }};
@@ -360,9 +360,8 @@ private:
 
             consumeToken();
         } else if (peekToken().value().type == TokenType::int_lit) {
-            if (!peekToken().value().value.has_value()) {
-                std::cerr << "parser error: got int literal with no value\n";
-            }
+            assert (peekToken().value().value.has_value() == true &&
+                    "parser error: got int literal with no value\n");
 
             expr = new NodeBinaryExpr;
             NodeTerm* term { new NodeTerm { std::stoi(peekToken().value().value.value()) }};

@@ -45,12 +45,13 @@ private:
 
         } else {
             std::cerr << "statment has unexpected variant";
+            exit(EXIT_FAILURE);
         }
     }
 
     void executeStmtDefineVar(const NodeStmtDefineVar* const node) {
         const std::string ident = node->identifier;
-        std::vector<Variable>::iterator it { // what the hell type is this
+        std::vector<Variable>::iterator it {
             std::find_if(
                     m_vars.begin(),
                     m_vars.end(),
@@ -77,7 +78,7 @@ private:
         const std::string ident = node->identifier;
         const int value { evaluateExpression(node->value) };
 
-        std::vector<Variable>::iterator it { // what the hell type is this
+        std::vector<Variable>::iterator it {
             std::find_if(
                     m_vars.begin(),
                     m_vars.end(),
@@ -118,9 +119,11 @@ private:
 
         } else if (std::holds_alternative<ident>(term->term)) {
             ident& identifier { std::get<ident>(term->term) };
-            std::vector<Variable>::const_iterator it { std::find_if( // check if the identifer exists
-                m_vars.begin(), m_vars.end(),
-                [&identifier] (const Variable& var)
+            std::vector<Variable>::const_iterator it {
+                std::find_if( // check if the identifer exists
+                    m_vars.begin(),
+                    m_vars.end(),
+                    [&identifier] (const Variable& var)
                 { return var.identifier == identifier; }
             )};
 
@@ -145,8 +148,8 @@ private:
         }
     }
 
-    int evaluateBinaryEpxression(const NodeBinaryExpr* const expr) const {
-        // evaluates left to right for now.
+    int evaluateBinaryExpression(const NodeBinaryExpr* const expr) const {
+        // TODO: expressions evaluate left to right.
 
         if (expr->operands.size() != expr->operators.size() + 1) {
             std::cerr << "wrong number of operatos for number of operands\n"
@@ -198,7 +201,7 @@ private:
         }
 
         if (std::holds_alternative<NodeBinaryExpr *>(expr->expression)) {
-            return evaluateBinaryEpxression(
+            return evaluateBinaryExpression(
                 std::get<NodeBinaryExpr *>(expr->expression));
         }
 
