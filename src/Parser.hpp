@@ -89,11 +89,6 @@ public:
     }
 
 private:
-    std::vector<Token> m_inTokens;
-    size_t m_index{};
-    NodeProgram m_prog;
-
-private:
     std::optional<Token> peekToken(size_t offset = 0) {
         if (m_index + offset < m_inTokens.size())
             return m_inTokens[m_index + offset];
@@ -162,7 +157,7 @@ private:
             exit(EXIT_FAILURE);
         }
         consumeToken();
-
+ 
         // expect expression after '='
         std::optional<NodeExpr *> expr { getNodeExpr() };
         if (!expr.has_value()) {
@@ -180,7 +175,10 @@ private:
         consumeToken();
 
         // NOTE: copying strings but whatever
-        NodeStmtDefineVar* node { new NodeStmtDefineVar { ident, expr.value() } };
+        NodeStmtDefineVar* node { new NodeStmtDefineVar {
+            .identifier { ident },
+            .value { expr.value() }
+        }};
         return node;
     }
 
@@ -215,7 +213,10 @@ private:
         consumeToken();
 
         // NOTE: copying strings but whatever
-        NodeStmtAssignVar* node { new NodeStmtAssignVar { ident, expr.value() } };
+        NodeStmtAssignVar* node { new NodeStmtAssignVar {
+           .identifier { ident },
+           .value { expr.value() }
+        }};
         return node;
     }
 
@@ -243,7 +244,9 @@ private:
         }
         consumeToken();
 
-        NodeStmtReturn* node { new NodeStmtReturn { expr.value() } };
+        NodeStmtReturn* node { new NodeStmtReturn {
+            .value {expr.value() }
+        }};
         return node;
     }
 
@@ -354,7 +357,9 @@ private:
                    "parser error: got identifier with no value\n");
 
             expr = new NodeBinaryExpr;
-            NodeTerm* term { new NodeTerm { peekToken().value().value.value() }};
+            NodeTerm* term { new NodeTerm {
+               .term { peekToken().value().value.value() }
+            }};
 
             expr->operands.push_back(term);
 
@@ -364,7 +369,9 @@ private:
                     "parser error: got int literal with no value\n");
 
             expr = new NodeBinaryExpr;
-            NodeTerm* term { new NodeTerm { std::stoi(peekToken().value().value.value()) }};
+            NodeTerm* term { new NodeTerm {
+               .term { std::stoi(peekToken().value().value.value()) }
+            }};
 
             expr->operands.push_back(term);
 
@@ -386,7 +393,9 @@ private:
                     std::cerr << "parser error: got identifier with no value\n";
                 }
 
-                NodeTerm* term { new NodeTerm { peekToken().value().value.value() }};
+                NodeTerm* term { new NodeTerm {
+                    .term { peekToken().value().value.value() }
+                }};
                 expr->operands.push_back(term);
 
                 consumeToken();
@@ -396,7 +405,9 @@ private:
                     std::cerr << "parser error: got int literal with no value\n";
                 }
 
-                NodeTerm* term { new NodeTerm { std::stoi(peekToken().value().value.value()) }};
+                NodeTerm* term { new NodeTerm {
+                    .term { std::stoi(peekToken().value().value.value()) }
+                }};
                 expr->operands.push_back(term);
 
                 consumeToken();
@@ -409,6 +420,12 @@ private:
         }
         return expr;
     }
+
+private:
+    std::vector<Token> m_inTokens;
+    size_t m_index{};
+    NodeProgram m_prog;
+
 };
 
 inline std::ostream& operator<< (std::ostream& out, NodeStatement* node) {
